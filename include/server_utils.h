@@ -12,6 +12,11 @@
 
 const size_t k_max_msg = 4096;
 
+// for intrusive data structure
+#define container_of(ptr, T, member) ({                  \
+    const typeof( ((T *)0)->member ) *__mptr = (ptr);    \
+    (T *)( (char *)__mptr - offsetof(T, member) );})
+
 // state of incoming events
 enum {
     STATE_REQ = 0,
@@ -36,6 +41,18 @@ enum {
     RES_ERR = 1,
     RES_NX = 2,
 };
+
+// structure for key-val node
+struct Entry {
+    struct HNode node;
+    std::string key;
+    std::string val;
+};
+
+// data structure for the key space
+struct {
+    HMap db;
+} g_data;
 
 // put a new connection state to fd2conn
 void conn_put(std::vector<Conn*> &fd2conn, struct Conn *conn);
@@ -69,9 +86,15 @@ bool cmd_is(const std::string &word, const char *cmd);
 
 // process the request
 int32_t do_request(const uint8_t *rbuf, uint32_t request_len, uint32_t *rescode, uint8_t *wbuf, uint32_t *wlen);
+uint32_t do_get(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
+uint32_t do_set(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
+uint32_t do_del(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
 
-uint32_t do_get(const std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
-uint32_t do_set(const std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
-uint32_t do_del(const std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
+
+// calculate hash value of a string
+uint64_t str_hash(const uint8_t *data, size_t len);
+
+// determine whether two keys are equal
+bool entry_eq(HNode *lhs, HNode *rhs);
 
 #endif //MY_REDIS_SERVER_UTILS_H

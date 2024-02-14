@@ -4,6 +4,7 @@
 
 #include "utils.h"
 #include "server_utils.h"
+#include "hashtable.h"
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -17,6 +18,7 @@
 #include <sys/epoll.h>
 #include <string>
 #include <map>
+
 
 static std::map<std::string, std::string> g_map;
 
@@ -293,27 +295,70 @@ bool cmd_is(const std::string &word, const char *cmd){
     return 0 == strcasecmp(word.c_str(), cmd);
 }
 
-uint32_t do_get(const std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
-    if(!g_map.count(cmd[1])){return RES_NX;}
+uint32_t do_get(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
     
-    std::string &val = g_map[cmd[1]];
+    Entry key;
+    key.key.swap(cmd[1]);
+    key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
+
+    HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
+    if(!node){ // not exist
+        return RES_NX;
+    }
+    
+    // fetch the data
+    const std::string &val = container_of(node, Entry, node)->val;
+    // setup result buffers
     assert(val.size() <= k_max_msg);
     memcpy(res, val.data(), val.size());
     *reslen = (uint32_t)val.size();
+    
     return RES_OK;
 }
 
-uint32_t do_set(const std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
+uint32_t do_set(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
     (void)res;
     (void)reslen;
-    g_map[cmd[1]] = cmd[2];
+
+    Entry *new_entry = (Entry *)malloc(sizeof(Entry)); // heap allocation
+    new_entry->key.swap(cmd[1]);
+    new_entry->val.swap(cmd[2]);
+    new_entry->node.hcode = str_hash((uint8_t *)new_entry->key.data(), new_entry->key.size());
+
+    hm_insert(&g_data.db, &new_entry->node);
+
     return RES_OK;
 }
 
-uint32_t do_del(const std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
+uint32_t do_del(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
     (void)res;
     (void)reslen;
-    g_map.erase(cmd[1]);
+
+    // key for query
+    Entry key;
+    key.key.swap(cmd[1]);
+    key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
+    // get the Entry object on heap (if exist)
+    HNode *del_node = hm_delete(&g_data.db, &key.node, entry_eq);
+    if (del_node){
+        Entry *del_entry = container_of(del_node, Entry, node);
+        free(del_entry); // heap deallocation
+    }
+    
     return RES_OK;  
 }
 
+
+uint64_t str_hash(const uint8_t *data, size_t len){ // MD-construction
+    uint32_t h = 0x811C9DC5;
+    for (size_t i = 0; i < len; i++){
+        h = (h + data[i]) * 0x01000193;
+    };
+    return h;
+}
+
+bool entry_eq(HNode *lhs, HNode *rhs){
+    struct Entry *le = container_of(lhs, struct Entry, node);
+    struct Entry *re = container_of(rhs, struct Entry, node);
+    return le->key == re->key;
+}

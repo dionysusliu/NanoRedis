@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/server.dir/src/hashtable.cpp.o"
+  "CMakeFiles/server.dir/src/hashtable.cpp.o.d"
   "CMakeFiles/server.dir/src/server.cpp.o"
   "CMakeFiles/server.dir/src/server.cpp.o.d"
   "CMakeFiles/server.dir/src/server_utils.cpp.o"

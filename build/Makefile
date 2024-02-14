@@ -166,6 +166,30 @@ src/client.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client.cpp.s
 .PHONY : src/client.cpp.s
 
+src/hashtable.o: src/hashtable.cpp.o
+.PHONY : src/hashtable.o
+
+# target to build an object file
+src/hashtable.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/hashtable.cpp.o
+.PHONY : src/hashtable.cpp.o
+
+src/hashtable.i: src/hashtable.cpp.i
+.PHONY : src/hashtable.i
+
+# target to preprocess a source file
+src/hashtable.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/hashtable.cpp.i
+.PHONY : src/hashtable.cpp.i
+
+src/hashtable.s: src/hashtable.cpp.s
+.PHONY : src/hashtable.s
+
+# target to generate assembly for a file
+src/hashtable.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/hashtable.cpp.s
+.PHONY : src/hashtable.cpp.s
+
 src/server.o: src/server.cpp.o
 .PHONY : src/server.o
 
@@ -254,6 +278,9 @@ help:
 	@echo "... src/client.o"
 	@echo "... src/client.i"
 	@echo "... src/client.s"
+	@echo "... src/hashtable.o"
+	@echo "... src/hashtable.i"
+	@echo "... src/hashtable.s"
 	@echo "... src/server.o"
 	@echo "... src/server.i"
 	@echo "... src/server.s"

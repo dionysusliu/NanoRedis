@@ -6,13 +6,15 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories(include/)
 
 add_executable(server
-        include/utils.h
         src/server.cpp
         src/utils.cpp
+        src/hashtable.cpp
         src/server_utils.cpp
+        include/utils.h
+        include/hashtable.h
         include/server_utils.h)
 
 add_executable(client
-        include/utils.h
         src/client.cpp
-        src/utils.cpp)
+        src/utils.cpp
+        include/utils.h)

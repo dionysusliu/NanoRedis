@@ -11,6 +11,11 @@
 },
 {
   "directory": "/home/leo/my-redis/my-redis/build",
+  "command": "/home/linuxbrew/.linuxbrew/bin/g++-13  -I/home/leo/my-redis/my-redis/include -g -std=gnu++14 -o CMakeFiles/server.dir/src/hashtable.cpp.o -c /home/leo/my-redis/my-redis/src/hashtable.cpp",
+  "file": "/home/leo/my-redis/my-redis/src/hashtable.cpp"
+},
+{
+  "directory": "/home/leo/my-redis/my-redis/build",
   "command": "/home/linuxbrew/.linuxbrew/bin/g++-13  -I/home/leo/my-redis/my-redis/include -g -std=gnu++14 -o CMakeFiles/server.dir/src/server_utils.cpp.o -c /home/leo/my-redis/my-redis/src/server_utils.cpp",
   "file": "/home/leo/my-redis/my-redis/src/server_utils.cpp"
 },

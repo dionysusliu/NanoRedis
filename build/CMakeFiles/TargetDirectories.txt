@@ -1,0 +1,4 @@
+/home/leo/my-redis/my-redis/build/CMakeFiles/server.dir
+/home/leo/my-redis/my-redis/build/CMakeFiles/client.dir
+/home/leo/my-redis/my-redis/build/CMakeFiles/edit_cache.dir
+/home/leo/my-redis/my-redis/build/CMakeFiles/rebuild_cache.dir

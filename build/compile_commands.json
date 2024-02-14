@@ -1,0 +1,27 @@
+[
+{
+  "directory": "/home/leo/my-redis/my-redis/build",
+  "command": "/home/linuxbrew/.linuxbrew/bin/g++-13  -I/home/leo/my-redis/my-redis/include -g -std=gnu++14 -o CMakeFiles/server.dir/src/server.cpp.o -c /home/leo/my-redis/my-redis/src/server.cpp",
+  "file": "/home/leo/my-redis/my-redis/src/server.cpp"
+},
+{
+  "directory": "/home/leo/my-redis/my-redis/build",
+  "command": "/home/linuxbrew/.linuxbrew/bin/g++-13  -I/home/leo/my-redis/my-redis/include -g -std=gnu++14 -o CMakeFiles/server.dir/src/utils.cpp.o -c /home/leo/my-redis/my-redis/src/utils.cpp",
+  "file": "/home/leo/my-redis/my-redis/src/utils.cpp"
+},
+{
+  "directory": "/home/leo/my-redis/my-redis/build",
+  "command": "/home/linuxbrew/.linuxbrew/bin/g++-13  -I/home/leo/my-redis/my-redis/include -g -std=gnu++14 -o CMakeFiles/server.dir/src/server_utils.cpp.o -c /home/leo/my-redis/my-redis/src/server_utils.cpp",
+  "file": "/home/leo/my-redis/my-redis/src/server_utils.cpp"
+},
+{
+  "directory": "/home/leo/my-redis/my-redis/build",
+  "command": "/home/linuxbrew/.linuxbrew/bin/g++-13  -I/home/leo/my-redis/my-redis/include -g -std=gnu++14 -o CMakeFiles/client.dir/src/client.cpp.o -c /home/leo/my-redis/my-redis/src/client.cpp",
+  "file": "/home/leo/my-redis/my-redis/src/client.cpp"
+},
+{
+  "directory": "/home/leo/my-redis/my-redis/build",
+  "command": "/home/linuxbrew/.linuxbrew/bin/g++-13  -I/home/leo/my-redis/my-redis/include -g -std=gnu++14 -o CMakeFiles/client.dir/src/utils.cpp.o -c /home/leo/my-redis/my-redis/src/utils.cpp",
+  "file": "/home/leo/my-redis/my-redis/src/utils.cpp"
+}
+]

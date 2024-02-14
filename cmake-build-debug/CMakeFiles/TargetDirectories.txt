@@ -1,0 +1,4 @@
+/home/leo/my-redis/my-redis/cmake-build-debug/CMakeFiles/server.dir
+/home/leo/my-redis/my-redis/cmake-build-debug/CMakeFiles/client.dir
+/home/leo/my-redis/my-redis/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/leo/my-redis/my-redis/cmake-build-debug/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,12 @@
+# ninja log v5
+5	173	1707864135821864989	CMakeFiles/server.dir/src/server.cpp.o	c596fafc479da771
+0	20	1707775453866951208	CMakeFiles/client.dir/src/utils.cpp.o	fc643a4fe912da8f
+35	76	1707840558518383342	client	44e5fac1256d8d8
+1	19	1707864467901763821	build.ninja	9e11ed77b766ff07
+1	35	1707840558478383357	CMakeFiles/client.dir/src/client.cpp.o	1b278792c0080147
+0	26	1707840666208350988	CMakeFiles/server.dir/src/utils.cpp.o	87835054e635c131
+0	122	1707840666298350956	CMakeFiles/server.dir/src/server_utils.cpp.o	ed68e866fe32b4a8
+173	246	1707864135891864965	server	a1ef69f6b0e1d245
+1	113	1707865415811481466	CMakeFiles/server.dir/src/server.cpp.o	c596fafc479da771
+1	141	1707865415831481456	CMakeFiles/server.dir/src/server_utils.cpp.o	ed68e866fe32b4a8
+141	236	1707865415931481430	server	a1ef69f6b0e1d245

@@ -18,9 +18,8 @@
 #include <sys/epoll.h>
 #include <string>
 #include <map>
+#include <iostream>
 
-
-static std::map<std::string, std::string> g_map;
 
 void fd_set_nb(int fd){
     errno = 0;
@@ -94,30 +93,18 @@ void connection_io(Conn *conn, int epfd){
     }
 }
 
-int32_t do_request(
-    const uint8_t *req, uint32_t reqlen, 
-    uint32_t *rescode, uint8_t *res, uint32_t *reslen
-){
-    std::vector<std::string> cmd;
-    if(0 != parse_req(req, reqlen, cmd)){
-        msg("bad req");
-        return -1;
+void do_request(std::vector<std::string> &cmd, std::string &out){
+    if (cmd.size() == 1 && cmd_is(cmd[0], "keys")) {
+        do_keys(cmd, out);
+    } else if(cmd.size() == 2 && cmd_is(cmd[0], "get")) {
+        do_get(cmd, out);
+    } else if(cmd.size() == 3 && cmd_is(cmd[0], "set")) {
+        do_set(cmd, out);
+    } else if(cmd.size() == 2 && cmd_is(cmd[0], "del")) {
+        do_del(cmd, out);
+    } else { // cmd is not recognized
+        out_err(out, ERR_UNKNOWN, "Unknown cmd");
     }
-    if(cmd.size() == 2 && cmd_is(cmd[0], "get")){
-        *rescode = do_get(cmd, res, reslen);
-    } else if (cmd.size() == 3 && cmd_is(cmd[0], "set")) {
-        *rescode = do_set(cmd, res, reslen);
-    } else if (cmd.size() == 2 && cmd_is(cmd[0], "del")) {
-        *rescode = do_del(cmd, res, reslen);
-    } else {
-        // cmd is not recognized
-        *rescode = RES_ERR;
-        const char *msg = "Unknown cmd";
-        strcpy((char *)res, msg);
-        *reslen = strlen(msg);
-        return 0;
-    }
-    return 0;
 }
 
 bool try_one_request(Conn *conn, int epfd){
@@ -126,7 +113,7 @@ bool try_one_request(Conn *conn, int epfd){
         return false;
     }
     uint32_t len = 0;
-    memcpy(&len, conn->rbuf, sizeof(uint32_t));
+    memcpy(&len, &conn->rbuf[0], sizeof(uint32_t));
     if(len > k_max_msg){
         msg("payload is too long");
         conn->state = STATE_END;
@@ -137,25 +124,29 @@ bool try_one_request(Conn *conn, int epfd){
     if(conn->rbuf_size - 4 < len){ // payload is not complete
         return false;
     }
-    
-    // do the request
-    uint32_t rescode = 0;
-    uint32_t wlen = 0;
-    int32_t err = do_request(
-        &conn->rbuf[4], 
-        len, 
-        &rescode,
-        &conn->wbuf[4+4], 
-        &wlen);
-    if(err){
+
+    // parse the request
+    std::vector<std::string> cmd;
+    if(0 != parse_req(&conn->rbuf[4], len, cmd)) {
+        msg("bad msg");
         conn->state = STATE_END;
         return false;
     }
+    
+    // do the request
+    std::string out;
+    do_request(cmd, out);
+
+    // now pack the response into the buffer
+    if(4 + out.size() > k_max_msg) {
+        out.clear();
+        out_err(out, ERR_2BIG, "response is too big");
+    }
 
     // fill in header and rescode in wbuf
-    wlen += 4; // add 4 bytes for rescode length
+    uint32_t wlen = (uint32_t)out.size(); // add 4 bytes for rescode length
     memcpy(&conn->wbuf[0], &wlen, 4);
-    memcpy(&conn->wbuf[4], &rescode, 4);
+    memcpy(&conn->wbuf[4], out.data(), out.size());
     conn->wbuf_size = 4 + wlen;
 
     // remove this request from rbuf
@@ -295,70 +286,132 @@ bool cmd_is(const std::string &word, const char *cmd){
     return 0 == strcasecmp(word.c_str(), cmd);
 }
 
-uint32_t do_get(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
-    
+
+
+
+
+
+void do_keys(std::vector<std::string>& cmd, std::string &out){
+    (void)cmd;
+    out_arr(out, (uint32_t)hm_size(&g_data.db));
+    h_scan(&g_data.db.tb1, &cb_scan, &out);
+    h_scan(&g_data.db.tb2, &cb_scan, &out);
+}
+
+
+
+
+void do_get(std::vector<std::string>& cmd, std::string &out){
     Entry key;
     key.key.swap(cmd[1]);
     key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
 
     HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
     if(!node){ // not exist
-        return RES_NX;
+        out_nil(out);
+        return;
     }
-    
+
     // fetch the data
-    const std::string &val = container_of(node, Entry, node)->val;
-    // setup result buffers
-    assert(val.size() <= k_max_msg);
-    memcpy(res, val.data(), val.size());
-    *reslen = (uint32_t)val.size();
-    
-    return RES_OK;
+    const std::string &val = container_of(node, Entry, node)->val; assert(val.size() < k_max_msg);
+    out_str(out, val);
 }
 
-uint32_t do_set(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
-    (void)res;
-    (void)reslen;
 
-    Entry *new_entry = (Entry *)malloc(sizeof(Entry)); // heap allocation
-    new_entry->key.swap(cmd[1]);
-    new_entry->val.swap(cmd[2]);
-    new_entry->node.hcode = str_hash((uint8_t *)new_entry->key.data(), new_entry->key.size());
-
-    hm_insert(&g_data.db, &new_entry->node);
-
-    return RES_OK;
-}
-
-uint32_t do_del(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen){
-    (void)res;
-    (void)reslen;
-
-    // key for query
+void do_set(std::vector<std::string>& cmd, std::string &out){
     Entry key;
     key.key.swap(cmd[1]);
     key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
-    // get the Entry object on heap (if exist)
-    HNode *del_node = hm_delete(&g_data.db, &key.node, entry_eq);
-    if (del_node){
-        Entry *del_entry = container_of(del_node, Entry, node);
-        free(del_entry); // heap deallocation
+    HNode *query = hm_lookup(&g_data.db, &key.node, entry_eq);
+    if(query){ // key already exist
+        container_of(query, Entry, node)->val.swap(cmd[2]);
+    } else { // key not found
+        Entry *new_entry = (Entry *)malloc(sizeof(Entry)); // heap allocation
+        new_entry->key.swap(key.key);
+        new_entry->val.swap(cmd[2]);
+        new_entry->node.hcode = str_hash((uint8_t *)new_entry->key.data(), new_entry->key.size());
+        hm_insert(&g_data.db, &new_entry->node);
     }
-    
-    return RES_OK;  
+    out_nil(out);
 }
 
 
-uint64_t str_hash(const uint8_t *data, size_t len){ // MD-construction
-    uint32_t h = 0x811C9DC5;
-    for (size_t i = 0; i < len; i++){
-        h = (h + data[i]) * 0x01000193;
-    };
-    return h;
+void do_del(std::vector<std::string>& cmd, std::string &out){
+    // deletion 
+    // 1. construct key for query
+    Entry key;
+    key.key.swap(cmd[1]);
+    key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
+    // 2. get the Entry object on heap (if exist)
+    HNode *del_node = hm_pop(&g_data.db, &key.node, entry_eq);
+    if (del_node){
+        free((Entry *)container_of(del_node, Entry, node)); // heap deallocation
+    }
+
+    // respond with an interger, indicating whether the deletion took place
+    return out_int(out, del_node ? 1:0);
 }
+
+
 
 bool entry_eq(HNode *lhs, HNode *rhs){
+    msg("entry_eq()");
     struct Entry *le = container_of(lhs, struct Entry, node);
+    msg("   got lhs entry");
     struct Entry *re = container_of(rhs, struct Entry, node);
+    msg("   got rhs entry");
     return le->key == re->key;
+}
+
+
+
+// Data Encoding Scheme
+void out_nil(std::string &out){
+    // 1b NIL SIGNAL
+    out.push_back(SER_NIL);
+}
+
+void out_str(std::string &out, const std::string &val){
+    // 1b - SER_STR
+    // 4b - msg length
+    // varlen - msg
+    out.push_back(SER_STR);
+    uint32_t len = (uint32_t)val.size();
+    out.append((char *)&len, 4);
+    out.append(val);
+}
+
+void out_int(std::string &out, int64_t val){
+    // 1b - SER_INT
+    // 4b - val
+    out.push_back(SER_INT);
+    out.append((char *)&val, 8);
+}
+
+void out_err(std::string &out, int32_t code, const std::string &msg){
+    // 1b - SER_ERR
+    // 4b - ERR_CODE
+    // 4b - msg length
+    // varlen - msg
+    out.push_back(SER_ERR);
+    out.append((char *)&code, 4);
+    uint32_t msg_len = (uint32_t)out.size();
+    out.append((char *)&msg_len, 4);
+    out.append(msg);
+}
+
+void out_arr(std::string &out, uint32_t n) {
+    // 1b - SER_ARR
+    // 4b - array length
+    out.push_back(SER_ARR);
+    out.append((char *)&n, 4);
+}
+
+
+
+
+// Scan Callbacks
+void cb_scan(HNode *node, void *arg){
+    std::string &out = *(std::string *)arg;
+    out_str(out, container_of(node, Entry, node)->key);
 }

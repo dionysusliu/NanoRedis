@@ -10,12 +10,12 @@
 #include <vector>
 #include <string>
 
+#include "hashtable.h"
+#include "utils.h"
+
 const size_t k_max_msg = 4096;
 
-// for intrusive data structure
-#define container_of(ptr, T, member) ({                  \
-    const typeof( ((T *)0)->member ) *__mptr = (ptr);    \
-    (T *)( (char *)__mptr - offsetof(T, member) );})
+
 
 // state of incoming events
 enum {
@@ -36,11 +36,8 @@ struct Conn {
     uint8_t wbuf[4 + k_max_msg];
 };
 
-enum {
-    RES_OK = 0,
-    RES_ERR = 1,
-    RES_NX = 2,
-};
+
+
 
 // structure for key-val node
 struct Entry {
@@ -51,7 +48,7 @@ struct Entry {
 
 // data structure for the key space
 struct {
-    HMap db;
+    struct HMap db;
 } g_data;
 
 // put a new connection state to fd2conn
@@ -80,21 +77,47 @@ bool try_flush_buffer(Conn *conn, int epfd); // response handling means "send ms
 // set an fd in non-blocking mode
 void fd_set_nb(int fd);
 
+
+
+
+// Data Encoding Scheme
+void out_nil(std::string &out);
+void out_str(std::string &out, const std::string &val);
+void out_int(std::string &out, int64_t val);
+void out_err(std::string &out, int32_t code, const std::string &msg);
+void out_arr(std::string &out, uint32_t n);
+
 // parse the request
 int32_t parse_req(const uint8_t *data, size_t len, std::vector<std::string>& out);
 bool cmd_is(const std::string &word, const char *cmd);
 
 // process the request
-int32_t do_request(const uint8_t *rbuf, uint32_t request_len, uint32_t *rescode, uint8_t *wbuf, uint32_t *wlen);
-uint32_t do_get(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
-uint32_t do_set(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
-uint32_t do_del(std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen);
-
+void do_request(std::vector<std::string>& cmd, std::string &out);
+void do_get(std::vector<std::string>& cmd, std::string &out);
+void do_set(std::vector<std::string>& cmd, std::string &out);
+void do_del(std::vector<std::string>& cmd, std::string &out);
+void do_keys(std::vector<std::string>& cmd, std::string &out);
 
 // calculate hash value of a string
 uint64_t str_hash(const uint8_t *data, size_t len);
 
 // determine whether two keys are equal
 bool entry_eq(HNode *lhs, HNode *rhs);
+
+
+
+
+// Scan callbacks
+/**
+ * @brief Scan callback: extract key and put in the outbuf passed through $arg
+ * 
+ * @param node node to be scaned
+ * @param arg should be of ref type `std::string&`, used as output buf
+ */
+void cb_scan(HNode *node, void *arg);
+
+
+
+
 
 #endif //MY_REDIS_SERVER_UTILS_H

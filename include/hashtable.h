@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <stdint.h>
 #include <stddef.h>
@@ -17,6 +19,12 @@ struct HMap { // use two tables for progressive resizing
     HTab tb1;
     HTab tb2;
     size_t resizing_pos = 0;
+};
+
+struct HKey { // helper struct for key comparison (less memory alloc)
+    HNode node;
+    const char *name = NULL;
+    size_t len = 0;
 };
 
 
@@ -56,6 +64,15 @@ HNode** h_lookup(HTab *htab, HNode *key, bool (*eq)(HNode *, HNode *));
  */
 HNode* h_detach(HTab *htab, HNode **from);
 
+/**
+ * @brief scan all nodes in hashtable
+ * 
+ * @param tab target hash table
+ * @param f callback to call on each node
+ * @param arg argument to callback
+ */
+void h_scan(HTab *tab, void (*f)(HNode *, void *), void *arg);
+
 
 
 
@@ -65,6 +82,14 @@ HNode* h_detach(HTab *htab, HNode **from);
 
 const size_t k_max_load_factor = 8;
 const size_t k_resizing_work = 128;
+
+/**
+ * @brief get number of nodes of a HashMap struct
+ * 
+ * @param hmap target hashmap
+ * @return uint32_t number of nodes
+ */
+uint32_t hm_size(HMap *hmap);
 
 /**
  * @brief insert a HNode into a Hmap, should progressively resize the HTabs underneath
@@ -108,5 +133,5 @@ HNode *hm_lookup(HMap *hmap, HNode *key, bool (*eq)(HNode *, HNode *));
  * @param eq callback checking whether key equality
  * @return HNode* the deleted node
  */
-HNode *hm_delete(HMap *hmap, HNode *key, bool (*eq)(HNode *, HNode *));
+HNode *hm_pop(HMap *hmap, HNode *key, bool (*eq)(HNode *, HNode *));
 

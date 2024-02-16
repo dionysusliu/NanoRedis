@@ -21,6 +21,7 @@ const size_t k_max_msg = 4096;
 
 static int32_t send_req(int fd, const std::vector<std::string> &cmd);
 static int32_t read_res(int fd);
+static int32_t on_response(const uint8_t *data, size_t size);
 
 int main(int argc, char **argv){
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -51,7 +52,6 @@ int main(int argc, char **argv){
     }
 
     L_DONE:
-    printf("finish all queries\n");
     close(fd);
     return 0;
 }
@@ -107,16 +107,126 @@ static int32_t read_res(int fd) {
         return err;
     }
 
-    // do something
-    rbuf[4 + len] = '\0';
+    // parse response
+    int rv = on_response((uint8_t *)&rbuf[4], (size_t)len);
+    if(rv > 0 && (uint32_t)rv != len){
+        msg("bad response");
+        rv = -1;
+    }
+    
+    return rv;
 
-    // print the result
-    uint32_t rescode = 0;
-    if (len < 4) {
+}
+
+/**
+ * @brief validate size -> get SER_CODE -> deserialize 
+ * 
+ * @param data byte stream to be deserialized
+ * @param size valid size section to read
+ * @return int32_t bytes been read in this call, or -1 if error occurred
+ */
+static int32_t on_response(const uint8_t *data, size_t size){
+    if (size < 1) {
         msg("bad response");
         return -1;
     }
-    memcpy(&rescode, &rbuf[4], 4);
-    printf("server says: [%u] %.*s\n", rescode, len - 4, &rbuf[8]);
-    return 0;
+
+    switch(data[0]){ // SER_CODE
+        case SER_NIL:
+            // 1b NIL SIGNAL
+            printf("(nil)\n");
+            return 1;
+
+
+        case SER_ERR:
+            // 1b - SER_ERR
+            // 4b - ERR_CODE
+            // 4b - msg length
+            // varlen - msg
+            if(size - 1 < 8) { // incomplete
+                msg("bad response");
+                return -1;
+            } 
+            {
+                int32_t err_code;
+                uint32_t msg_len;
+                memcpy(&err_code, &data[1], 4);
+                memcpy(&msg_len, &data[1+4], 4);
+                if(size - 9 < msg_len) {
+                    msg("bad response");
+                    return -1;
+                }
+                printf("(err) %d %.*s\n", err_code, msg_len, &data[1+4+4]);
+                return 9 + msg_len;
+            }
+
+
+        case SER_INT:
+            // 1b - SER_INT
+            // 4b - val
+            if(size - 1 < 4) {
+                msg("bad response");
+                return -1;
+            }
+            {
+                int32_t val;
+                memcpy(&val, &data[1], 4);
+                printf("(int) val = %d\n", val);
+                return 5;
+            }
+
+
+        case SER_STR:
+            // 1b - SER_STR
+            // 4b - msg length
+            // varlen - msg
+            if(size - 1 < 4) {
+                msg("bad response");
+                return -1;
+            }
+            {
+                uint32_t msg_len;
+                memcpy(&msg_len, &data[1], 4);
+                if(size - 5 < msg_len) {
+                    msg("bad response");
+                    return -1;
+                }
+                printf("(str) strlen=%u %.*s\n", msg_len, msg_len, &data[5]);
+                return 5 + msg_len;
+            }
+
+
+        case SER_ARR:
+            // 1b - SER_ARR
+            // 4b - array length
+            if (size - 1 < 4){
+                msg("bad response");
+                return -1;
+            }
+            {
+                uint32_t arr_len;
+                memcpy(&arr_len, &data[1], 4);
+                printf("(arr) len=%u\n", arr_len);
+                int32_t parsed_bytes = 5;
+                // parse each entries of array
+                for(int arr_i = 0; arr_i < arr_len; ++arr_i){
+                    if(size < parsed_bytes) {
+                        msg("bad message");
+                        return -1;
+                    }
+                    int32_t pass_bytes = on_response(&data[parsed_bytes], size-parsed_bytes);
+                    if(pass_bytes < 0) {
+                        return -1; // emit the error
+                    }
+                    parsed_bytes += (size_t)pass_bytes;
+                }
+
+                return parsed_bytes;
+            }
+
+
+        default:
+            msg("bad response");
+            return -1;
+    }
 }

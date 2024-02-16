@@ -142,6 +142,30 @@ client/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/build
 .PHONY : client/fast
 
+src/avl_tree.o: src/avl_tree.cpp.o
+.PHONY : src/avl_tree.o
+
+# target to build an object file
+src/avl_tree.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/avl_tree.cpp.o
+.PHONY : src/avl_tree.cpp.o
+
+src/avl_tree.i: src/avl_tree.cpp.i
+.PHONY : src/avl_tree.i
+
+# target to preprocess a source file
+src/avl_tree.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/avl_tree.cpp.i
+.PHONY : src/avl_tree.cpp.i
+
+src/avl_tree.s: src/avl_tree.cpp.s
+.PHONY : src/avl_tree.s
+
+# target to generate assembly for a file
+src/avl_tree.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/avl_tree.cpp.s
+.PHONY : src/avl_tree.cpp.s
+
 src/client.o: src/client.cpp.o
 .PHONY : src/client.o
 
@@ -265,6 +289,30 @@ src/utils.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/utils.cpp.s
 .PHONY : src/utils.cpp.s
 
+src/zset.o: src/zset.cpp.o
+.PHONY : src/zset.o
+
+# target to build an object file
+src/zset.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/zset.cpp.o
+.PHONY : src/zset.cpp.o
+
+src/zset.i: src/zset.cpp.i
+.PHONY : src/zset.i
+
+# target to preprocess a source file
+src/zset.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/zset.cpp.i
+.PHONY : src/zset.cpp.i
+
+src/zset.s: src/zset.cpp.s
+.PHONY : src/zset.s
+
+# target to generate assembly for a file
+src/zset.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/zset.cpp.s
+.PHONY : src/zset.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -275,6 +323,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... client"
 	@echo "... server"
+	@echo "... src/avl_tree.o"
+	@echo "... src/avl_tree.i"
+	@echo "... src/avl_tree.s"
 	@echo "... src/client.o"
 	@echo "... src/client.i"
 	@echo "... src/client.s"
@@ -290,6 +341,9 @@ help:
 	@echo "... src/utils.o"
 	@echo "... src/utils.i"
 	@echo "... src/utils.s"
+	@echo "... src/zset.o"
+	@echo "... src/zset.i"
+	@echo "... src/zset.s"
 .PHONY : help
 
 

@@ -2,9 +2,10 @@
 #include <cassert>
 
 #include "hashtable.h"
+#include "utils.h"
 
 void h_init(HTab *htab, size_t n){
-    assert(n > 0 && ((n-1) & n == 0));
+    assert(n > 0 && ((n-1) & n) == 0);
     htab->tab = static_cast<HNode **>(calloc(sizeof(struct HNode *), n));
     htab->mask = n - 1;
     htab->size = 0;
@@ -22,15 +23,17 @@ void h_insert(HTab *htab, HNode *new_node){
 
 
 HNode** h_lookup(HTab *htab, HNode *key, bool (*eq)(HNode *, HNode *)){
-    if(!htab){
+    msg("h_lookup");
+    if(!htab->tab){
         return NULL;
     }
 
     size_t pos = key->hcode & htab->mask;
+    assert(pos < htab->mask + 1);
 
     // lookup in one pass
     HNode **from = &htab->tab[pos];
-    for (HNode *cur; (cur = *from)!=NULL; from = &(cur->next)){
+    for (HNode *cur; (cur = *from)!=NULL; from = &cur->next){
         if(cur->hcode == key->hcode && eq(key, cur)) {
             return from;
         }
@@ -47,6 +50,39 @@ HNode* h_detach(HTab *htab, HNode **from){
     htab->size--;
     return detached;
 }
+
+
+void h_scan(HTab *tab, void (*f)(HNode *, void *), void *arg){
+    if (tab->size == 0) return;
+    
+    // traverse all chains, apply callback on each node
+    for (size_t i = 0; i < tab->mask + 1; ++i){ // for each chain
+        HNode *target_node = tab->tab[i];
+        while(target_node){ // for each node in chain
+            f(target_node, arg);
+            target_node = target_node->next;
+        }
+    }
+}
+
+/**
+ * @brief util callback for hm_size, increment arg for each node
+ * 
+ * @param node an HNode encountered
+ * @param arg of type (uint32_t *), inc 1 for each call
+ */
+static void inc(HNode *node, void *arg){
+    (*(uint32_t *)arg)++; // increment the count value pointed by *arg
+}
+
+uint32_t hm_size(HMap *hmap){
+    uint32_t count = 0;
+    h_scan(&hmap->tb1, &inc, &count);
+    h_scan(&hmap->tb2, &inc, &count);
+    return count;
+}
+
+
 
 /**
  * @brief insert a HNode into a Hmap, should progressively resize the HTabs underneath
@@ -91,6 +127,7 @@ void hm_start_resizing(HMap *hmap){
  * @param hmap target hashmap
  */
 void hm_help_resizing(HMap *hmap){
+    msg("hm_help_resizing");
     size_t n_work = 0;
     while(n_work < k_resizing_work && hmap->tb2.size > 0){ // move node from tb2 to tb1, one by one
         if(!hmap->tb2.tab[hmap->resizing_pos]){
@@ -107,14 +144,14 @@ void hm_help_resizing(HMap *hmap){
 }
 
 HNode *hm_lookup(HMap *hmap, HNode *key, bool (*eq)(HNode *, HNode *)){
+    msg("hm_lookup");
     hm_help_resizing(hmap);
     HNode **from = h_lookup(&hmap->tb1, key, eq);
     from = from ? from : h_lookup(&hmap->tb2, key, eq);
     return from ? *from : NULL;
 }
 
-HNode *hm_delete(HMap *hmap, HNode *key, bool (*eq)(HNode *, HNode *)){
-    hm_help_resizing(hmap);
+HNode *hm_pop(HMap *hmap, HNode *key, bool (*eq)(HNode *, HNode *)){
     // check first table
     HNode **from = h_lookup(&hmap->tb1, key, eq);
     if(from){
